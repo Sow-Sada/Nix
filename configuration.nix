@@ -64,9 +64,9 @@
   services.xserver.enable = true;
 
   # Enable the GNOME Desktop Environment.
-  services.xserver.displayManager.gdm.enable = true;
-  services.xserver.desktopManager.gnome.enable = true;
-
+  services.displayManager.gdm.enable = true;
+  services.desktopManager.gnome.enable = true;
+  
   # Configure keymap in X11
   services.xserver.xkb = {
     layout = "us";
@@ -138,12 +138,14 @@
   users.users."ssow" = {
     isNormalUser = true;
     description = "Sada Sow";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "networkmanager" "wheel" "libvirtd" ];
     packages = with pkgs; [
       thunderbird
     ];
   };
  
+ 
+  
  users.defaultUserShell = pkgs.zsh;
  programs.neovim = {
   enable = true;
@@ -197,7 +199,16 @@
     protonplus
     oh-my-zsh
     wl-clipboard
+    bat
+    dnsmasq
+    lact
+    fuse2
+    gearlever
   ];
+  
+  services.lact.enable = true;
+
+  programs.localsend.enable = true;
 
   system.userActivationScripts.zshrc = "touch .zshrc";
 
@@ -223,6 +234,15 @@
 
   services.mullvad-vpn.enable = true;
   services.mullvad-vpn.package = pkgs.mullvad-vpn;
+
+  virtualisation.libvirtd.enable = true;
+  programs.virt-manager.enable = true;
+
+ services.nordvpn = {
+    enable = true;
+    users = [ "ssow" ];  # set this to your actual login username
+  }; 
+
 
 
   # Some programs need SUID wrappers, can be configured further or are
