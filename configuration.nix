@@ -204,6 +204,12 @@
     lact
     fuse2
     gearlever
+    mangohud
+    mangojuice
+    discord
+    telegram-desktop
+    fastfetch
+    tealdeer
   ];
   
   services.lact.enable = true;
@@ -252,7 +258,16 @@
   #   enable = true;
   #   enableSSHSupport = true;
   # };
-
+ programs.dconf.enable = true;
+ programs.dconf.profiles.user.databases = [
+   {
+    settings = {
+      "org/gnome/shell" = {
+        disable-extension-version-validation = true;
+      };
+    };
+   }
+ ];
   # List services that you want to enable:
 
   # Enable the OpenSSH daemon.
