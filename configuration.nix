@@ -145,7 +145,7 @@
   users.users."ssow" = {
     isNormalUser = true;
     description = "Sada Sow";
-    extraGroups = [ "networkmanager" "wheel" "libvirtd" ];
+    extraGroups = [ "networkmanager" "wheel" "libvirtd" "kvm" ];
     packages = with pkgs; [
       thunderbird
     ];
