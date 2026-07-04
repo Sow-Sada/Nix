@@ -1,10 +1,10 @@
 { config, pkgs, ... }:
 
 {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-    ];
+  imports = [
+    # Include the results of the hardware scan.
+    ./hardware-configuration.nix
+  ];
 
   boot.kernelParams = [ "amd_pstate=active" ];
 
@@ -22,13 +22,16 @@
   boot.loader.systemd-boot.configurationLimit = 10;
 
   nix.gc = {
-  automatic = true;
-  dates = "weekly";
-  options = "--delete-older-than 14d";
- };
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 14d";
+  };
 
   nix.settings = {
-    experimental-features = [ "nix-command" "flakes" ];
+    experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
     substituters = [
       "https://cache.nixos.org"
       "https://attic.xuyh0120.win/lantian"
@@ -73,7 +76,7 @@
   # Enable the GNOME Desktop Environment.
   services.displayManager.gdm.enable = true;
   services.desktopManager.gnome.enable = true;
-  
+
   # Configure keymap in X11
   services.xserver.xkb = {
     layout = "us";
@@ -87,13 +90,13 @@
     priority = 100;
   };
 
-# Enable OpenGL
+  # Enable OpenGL
   hardware.graphics = {
     enable = true;
   };
 
   # Load nvidia driver for Xorg and Wayland
-  services.xserver.videoDrivers = ["nvidia"];
+  services.xserver.videoDrivers = [ "nvidia" ];
 
   hardware.nvidia = {
 
@@ -102,7 +105,7 @@
 
     # Nvidia power management. Experimental, and can cause sleep/suspend to fail.
     # Enable this if you have graphical corruption issues or application crashes after waking
-    # up from sleep. This fixes it by saving the entire VRAM memory to /tmp/ instead 
+    # up from sleep. This fixes it by saving the entire VRAM memory to /tmp/ instead
     # of just the bare essentials.
     powerManagement.enable = false;
 
@@ -112,14 +115,14 @@
 
     # Use the NVidia open source kernel module (not to be confused with the
     # independent third-party "nouveau" open source driver).
-    # Support is limited to the Turing and later architectures. Full list of 
-    # supported GPUs is at: 
-    # https://github.com/NVIDIA/open-gpu-kernel-modules#compatible-gpus 
+    # Support is limited to the Turing and later architectures. Full list of
+    # supported GPUs is at:
+    # https://github.com/NVIDIA/open-gpu-kernel-modules#compatible-gpus
     # Only available from driver 515.43.04+
     open = true;
 
     # Enable the Nvidia settings menu,
-	# accessible via `nvidia-settings`.
+    # accessible via `nvidia-settings`.
     nvidiaSettings = true;
 
     # Optionally, you may need to select the appropriate driver version for your specific GPU.
@@ -152,40 +155,40 @@
   users.users."ssow" = {
     isNormalUser = true;
     description = "Sada Sow";
-    extraGroups = [ "networkmanager" "wheel" "libvirtd" "kvm" ];
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+      "libvirtd"
+      "kvm"
+    ];
     packages = with pkgs; [
       thunderbird
     ];
   };
- 
- 
-  
- users.defaultUserShell = pkgs.zsh;
- programs.neovim = {
-  enable = true;
-  defaultEditor = true;
-  viAlias = true;
-  vimAlias = true;
- };
 
- programs.nix-ld.enable = true;
+  users.defaultUserShell = pkgs.zsh;
+  programs.neovim = {
+    enable = true;
+    defaultEditor = true;
+    viAlias = true;
+    vimAlias = true;
+  };
+
+  programs.nix-ld.enable = true;
 
   fonts.packages = with pkgs; [
     nerd-fonts.jetbrains-mono
   ];
 
-  # Install firefox.
-  programs.firefox.enable = true;
-
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
   programs.steam = {
-  enable = true; # Master switch, already covered in installation
-  remotePlay.openFirewall = true;  # Open ports in the firewall for Steam Remote Play
-  dedicatedServer.openFirewall = false; # Open ports for Source Dedicated Server hosting
-  # Other general flags if available can be set here.
- };
+    enable = true; # Master switch, already covered in installation
+    remotePlay.openFirewall = true; # Open ports in the firewall for Steam Remote Play
+    dedicatedServer.openFirewall = false; # Open ports for Source Dedicated Server hosting
+    # Other general flags if available can be set here.
+  };
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
@@ -224,8 +227,12 @@
     telegram-desktop
     fastfetch
     tealdeer
+    nil
+    nixfmt-rfc-style
+    statix
+    file
   ];
-  
+
   services.lact.enable = true;
 
   programs.localsend.enable = true;
@@ -233,15 +240,15 @@
   system.userActivationScripts.zshrc = "touch .zshrc";
 
   programs.zsh = {
-  enable = true;
-  enableCompletion = true;
-  autosuggestions.enable = true;
-  syntaxHighlighting.enable = true;
-  ohMyZsh = {
     enable = true;
-    plugins = [ "git" ];
-    theme = "robbyrussell";
-   };
+    enableCompletion = true;
+    autosuggestions.enable = true;
+    syntaxHighlighting.enable = true;
+    ohMyZsh = {
+      enable = true;
+      plugins = [ "git" ];
+      theme = "robbyrussell";
+    };
   };
 
   programs._1password.enable = true;
@@ -258,12 +265,10 @@
   virtualisation.libvirtd.enable = true;
   programs.virt-manager.enable = true;
 
- services.nordvpn = {
+  services.nordvpn = {
     enable = true;
-    users = [ "ssow" ];  # set this to your actual login username
-  }; 
-
-
+    users = [ "ssow" ]; # set this to your actual login username
+  };
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
@@ -272,16 +277,22 @@
   #   enable = true;
   #   enableSSHSupport = true;
   # };
- programs.dconf.enable = true;
- programs.dconf.profiles.user.databases = [
-   {
-    settings = {
-      "org/gnome/shell" = {
-        disable-extension-version-validation = true;
+
+  programs.appimage = {
+    enable = true;
+    binfmt = true;
+  };
+
+  programs.dconf.enable = true;
+  programs.dconf.profiles.user.databases = [
+    {
+      settings = {
+        "org/gnome/shell" = {
+          disable-extension-version-validation = true;
+        };
       };
-    };
-   }
- ];
+    }
+  ];
   # List services that you want to enable:
 
   # Enable the OpenSSH daemon.
@@ -293,6 +304,6 @@
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
 
-   system.stateVersion = "26.05"; # Did you read the comment?
+  system.stateVersion = "26.05"; # Did you read the comment?
 
 }
