@@ -228,7 +228,7 @@
     fastfetch
     tealdeer
     nil
-    nixfmt-rfc-style
+    nixfmt
     statix
     file
     protonup-qt
