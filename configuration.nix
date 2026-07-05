@@ -231,6 +231,7 @@
     nixfmt-rfc-style
     statix
     file
+    protonup-qt
   ];
 
   services.lact.enable = true;
