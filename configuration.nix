@@ -232,6 +232,7 @@
     statix
     file
     protonup-qt
+    python3
   ];
 
   services.lact.enable = true;
