@@ -1,5 +1,94 @@
 { config, lib, pkgs, ... }:
 
+let
+  # GDM greeter monitor layout. Materialized as an independent copy in
+  # the Nix store so the greeter never has to traverse /home/ssow.
+  # Since GNOME 49, the greeter reads this from /var/lib/gdm/seat0/config.
+  monitorsXml = pkgs.writeText "gdm-monitors.xml" ''
+    <monitors version="2">
+      <configuration>
+        <layoutmode>logical</layoutmode>
+        <logicalmonitor>
+          <x>0</x>
+          <y>0</y>
+          <scale>1.5</scale>
+          <monitor>
+            <monitorspec>
+              <connector>DP-2</connector>
+              <vendor>GBT</vendor>
+              <product>M27UP</product>
+              <serial>0x01010101</serial>
+            </monitorspec>
+            <mode>
+              <width>3840</width>
+              <height>2160</height>
+              <rate>160.000</rate>
+            </mode>
+          </monitor>
+        </logicalmonitor>
+        <logicalmonitor>
+          <x>2560</x>
+          <y>0</y>
+          <scale>1</scale>
+          <primary>yes</primary>
+          <monitor>
+            <monitorspec>
+              <connector>DP-1</connector>
+              <vendor>AUS</vendor>
+              <product>PG27AQWP-G</product>
+              <serial>W6LMAS004487</serial>
+            </monitorspec>
+            <mode>
+              <width>2560</width>
+              <height>1440</height>
+              <rate>540.000</rate>
+            </mode>
+          </monitor>
+        </logicalmonitor>
+      </configuration>
+      <configuration>
+        <layoutmode>logical</layoutmode>
+        <logicalmonitor>
+          <x>0</x>
+          <y>0</y>
+          <scale>1.5</scale>
+          <monitor>
+            <monitorspec>
+              <connector>DP-1</connector>
+              <vendor>GBT</vendor>
+              <product>M27UP</product>
+              <serial>0x01010101</serial>
+            </monitorspec>
+            <mode>
+              <width>3840</width>
+              <height>2160</height>
+              <rate>59.997</rate>
+            </mode>
+          </monitor>
+        </logicalmonitor>
+        <logicalmonitor>
+          <x>2560</x>
+          <y>0</y>
+          <scale>1</scale>
+          <primary>yes</primary>
+          <monitor>
+            <monitorspec>
+              <connector>DP-2</connector>
+              <vendor>AUS</vendor>
+              <product>PG27AQWP-G</product>
+              <serial>W6LMAS004487</serial>
+            </monitorspec>
+            <mode>
+              <width>2560</width>
+              <height>1440</height>
+              <rate>59.951</rate>
+            </mode>
+          </monitor>
+        </logicalmonitor>
+      </configuration>
+    </monitors>
+  '';
+in
 {
   imports = [
     # Include the results of the hardware scan.
@@ -36,8 +125,8 @@
   };
 
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.loader.timeout = 10; 
-  
+  boot.loader.timeout = 10;
+
   nix.gc = {
     automatic = true;
     dates = "weekly";
@@ -58,7 +147,7 @@
       "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc="
     ];
   };
-  
+
   swapDevices = lib.mkForce [ ];
 
   networking.hostName = "nixos";
@@ -95,8 +184,12 @@
   # GNOME Desktop Environment.
   services.displayManager.gdm.enable = true;
   services.desktopManager.gnome.enable = true;
-  # Note: GDM on Wayland uses the first enumerated DisplayPort output,
-  # not the primary flag. Same cable-order fix as on Bazzite applies.
+
+  # GDM greeter monitor layout, see monitorsXml above.
+  # L+ forces overwrite of any stale file or symlink.
+  systemd.tmpfiles.rules = [
+    "L+ /var/lib/gdm/seat0/config/monitors.xml - gdm gdm - ${monitorsXml}"
+  ];
 
   # Configure keymap in X11
   services.xserver.xkb = {
@@ -113,10 +206,9 @@
   };
 
   services.scx = {
-  enable = true;
-  scheduler = "scx_bpfland";
+    enable = true;
+    scheduler = "scx_bpfland";
   };
-
 
   # AMD graphics. The 9070 XT needs nothing beyond Mesa, which
   # hardware.graphics provides. 32-bit is required for Proton titles.
@@ -274,12 +366,12 @@
 
   services.mullvad-vpn.enable = true;
   services.mullvad-vpn.gui.enable = true;
-  # services.mullvad-vpn.package = pkgs.mullvad-vpn;
 
-  # Virtualisation. OVMF and swtpm are required for the UEFI guests
-  # (Whonix, hl-soc, KaliOSCP). Domains and networks themselves are
-  # imperative: restore images from B2, chattr +C the images subvolume
-  # first, then virsh net-define before virsh define.
+  # Virtualisation. swtpm is required for the UEFI guests
+  # (Whonix, hl-soc, KaliOSCP). OVMF ships with QEMU on 26.05+.
+  # Domains and networks themselves are imperative: restore images
+  # from B2, chattr +C the images subvolume first, then
+  # virsh net-define before virsh define.
   virtualisation.libvirtd = {
     enable = true;
     qemu = {
@@ -295,6 +387,7 @@
   };
 
   programs.dconf.enable = true;
+
   programs.dconf.profiles.user.databases = [
     {
       settings = {
@@ -305,54 +398,50 @@
     }
   ];
 
-  # Declarative restic to B2, replacing the hand-rolled timer from
-  # CachyOS. Fill in the environment file with B2 credentials and the
-  # repo password, then uncomment.
-  
-   services.restic.backups.b2 = {
-   repository = "b2:cachyos-backup-ss:/nixos";
-   environmentFile = "/etc/restic/env";
-   initialize = true;
+  # Declarative restic to B2. Credentials live in /etc/restic/env,
+  # including RESTIC_PASSWORD, so no passwordFile is needed.
+  services.restic.backups.b2 = {
+    repository = "b2:cachyos-backup-ss:/nixos";
+    environmentFile = "/etc/restic/env";
+    initialize = true;
 
-   paths = [
-     "/home/ssow"
-     "/etc"
-     "/var/lib/libvirt/images"   # Policy A; omit for Policy B or C
-   ];
+    paths = [
+      "/home/ssow"
+      "/etc"
+      "/var/lib/libvirt/images" # Policy A; omit for Policy B or C
+    ];
 
-   exclude = [
-     "/nix"
-     "/home/ssow/.cache"
-     "/home/ssow/Downloads"
-     "/home/ssow/.local/share/Steam/steamapps"
-     "/home/ssow/.local/share/Trash"
-     "**/node_modules"
-     "**/__pycache__"
-     "**/.venv"
-   ];
+    exclude = [
+      "/nix"
+      "/home/ssow/.cache"
+      "/home/ssow/Downloads"
+      "/home/ssow/.local/share/Steam/steamapps"
+      "/home/ssow/.local/share/Trash"
+      "**/node_modules"
+      "**/__pycache__"
+      "**/.venv"
+    ];
 
-   extraBackupArgs = [
-     "--exclude-caches"
-     "--exclude-file=/etc/restic/excludes.txt"
-     "--tag weekly"
-     "--tag nixos"
-   ];
+    extraBackupArgs = [
+      "--exclude-caches"
+      "--tag weekly"
+      "--tag nixos"
+    ];
 
-   pruneOpts = [
-     "--keep-daily 7"
-     "--keep-weekly 4"
-     "--keep-monthly 6"
-     "--keep-tag vm-images"      # THE FIX: tagged snapshots survive retention
-     "--keep-tag migration"
-   ];
+    pruneOpts = [
+      "--keep-daily 7"
+      "--keep-weekly 4"
+      "--keep-monthly 6"
+      "--keep-tag vm-images" # THE FIX: tagged snapshots survive retention
+      "--keep-tag migration"
+    ];
 
-   timerConfig = {
-     OnCalendar = "Sun 20:00";
-     Persistent = true;
-     RandomizedDelaySec = "10min";
-   };
- };
-
+    timerConfig = {
+      OnCalendar = "Sun 20:00";
+      Persistent = true;
+      RandomizedDelaySec = "10min";
+    };
+  };
 
   system.stateVersion = "26.05"; # Did you read the comment?
 
