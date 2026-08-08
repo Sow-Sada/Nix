@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   imports = [
@@ -25,10 +25,19 @@
   };
 
   # Bootloader.
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-  boot.loader.systemd-boot.configurationLimit = 10;
+  boot.loader.systemd-boot.enable = false;
 
+  boot.loader.grub = {
+    enable = true;
+    efiSupport = true;
+    device = "nodev";
+    useOSProber = true;
+    configurationLimit = 10;
+  };
+
+  boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.timeout = 10; 
+  
   nix.gc = {
     automatic = true;
     dates = "weekly";
@@ -49,6 +58,8 @@
       "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc="
     ];
   };
+  
+  swapDevices = lib.mkForce [ ];
 
   networking.hostName = "nixos";
 
@@ -100,6 +111,12 @@
     memoryPercent = 100;
     priority = 100;
   };
+
+  services.scx = {
+  enable = true;
+  scheduler = "scx_bpfland";
+  };
+
 
   # AMD graphics. The 9070 XT needs nothing beyond Mesa, which
   # hardware.graphics provides. 32-bit is required for Proton titles.
@@ -170,7 +187,6 @@
     gcc
     python3
     vscode
-    zed-editor
     obsidian
     # LSP servers on PATH, Mason stays disabled in LazyVim
     nil
@@ -200,11 +216,11 @@
     dnsmasq
     fuse2
     gearlever
+    e2fsprogs
 
     # Desktop apps
     brave
     ghostty
-    alacritty
     discord
     telegram-desktop
     zoom-us
@@ -292,16 +308,51 @@
   # Declarative restic to B2, replacing the hand-rolled timer from
   # CachyOS. Fill in the environment file with B2 credentials and the
   # repo password, then uncomment.
-  # services.restic.backups.b2 = {
-  #   repository = "b2:cachyos-backup-ss:/nixos";
-  #   environmentFile = "/etc/restic/env";
-  #   paths = [ "/home/ssow" "/etc" "/var/lib/libvirt/images" ];
-  #   timerConfig = {
-  #     OnCalendar = "daily";
-  #     Persistent = true;
-  #   };
-  #   pruneOpts = [ "--keep-daily 7" "--keep-weekly 4" "--keep-monthly 6" ];
-  # };
+  
+   services.restic.backups.b2 = {
+   repository = "b2:cachyos-backup-ss:/nixos";
+   environmentFile = "/etc/restic/env";
+   initialize = true;
+
+   paths = [
+     "/home/ssow"
+     "/etc"
+     "/var/lib/libvirt/images"   # Policy A; omit for Policy B or C
+   ];
+
+   exclude = [
+     "/nix"
+     "/home/ssow/.cache"
+     "/home/ssow/Downloads"
+     "/home/ssow/.local/share/Steam/steamapps"
+     "/home/ssow/.local/share/Trash"
+     "**/node_modules"
+     "**/__pycache__"
+     "**/.venv"
+   ];
+
+   extraBackupArgs = [
+     "--exclude-caches"
+     "--exclude-file=/etc/restic/excludes.txt"
+     "--tag weekly"
+     "--tag nixos"
+   ];
+
+   pruneOpts = [
+     "--keep-daily 7"
+     "--keep-weekly 4"
+     "--keep-monthly 6"
+     "--keep-tag vm-images"      # THE FIX: tagged snapshots survive retention
+     "--keep-tag migration"
+   ];
+
+   timerConfig = {
+     OnCalendar = "Sun 20:00";
+     Persistent = true;
+     RandomizedDelaySec = "10min";
+   };
+ };
+
 
   system.stateVersion = "26.05"; # Did you read the comment?
 
