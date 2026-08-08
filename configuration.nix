@@ -7,7 +7,7 @@
     ./hardware-configuration.nix
   ];
 
-  boot.kernelParams = [ "amd_pstate=active" ];
+  boot.kernelParams = [ "amd_pstate=active" "amdgpu.ppfeaturemask=0xffffffff" ];
 
   # amdgpu in initrd for early KMS. Lives here, not in
   # hardware-configuration.nix, so it survives regeneration.
@@ -257,7 +257,8 @@
   };
 
   services.mullvad-vpn.enable = true;
-  services.mullvad-vpn.package = pkgs.mullvad-vpn;
+  services.mullvad-vpn.gui.enable = true;
+  # services.mullvad-vpn.package = pkgs.mullvad-vpn;
 
   # Virtualisation. OVMF and swtpm are required for the UEFI guests
   # (Whonix, hl-soc, KaliOSCP). Domains and networks themselves are
@@ -293,8 +294,7 @@
   # repo password, then uncomment.
   # services.restic.backups.b2 = {
   #   repository = "b2:cachyos-backup-ss:/nixos";
-  #   environmentFile = "/root/.restic-env";
-  #   passwordFile = "/root/.restic-password";
+  #   environmentFile = "/etc/restic/env";
   #   paths = [ "/home/ssow" "/etc" "/var/lib/libvirt/images" ];
   #   timerConfig = {
   #     OnCalendar = "daily";

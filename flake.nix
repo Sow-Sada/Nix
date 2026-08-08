@@ -2,7 +2,7 @@
   description = "Sada's NixOS workstation";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
     # Do NOT add a nixpkgs.follows on the kernel input. It pins its own
     # nixpkgs so the prebuilt kernel matches the binary cache.
