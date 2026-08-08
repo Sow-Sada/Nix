@@ -161,7 +161,7 @@
     gamescopeSession.enable = true;
   };
 
-  programs.gamemode.enable = true;
+  programs.gamemode.enable = false;
 
   environment.systemPackages = with pkgs; [
     # Editors and dev
@@ -266,7 +266,6 @@
   virtualisation.libvirtd = {
     enable = true;
     qemu = {
-      ovmf.enable = true;
       swtpm.enable = true;
     };
   };
