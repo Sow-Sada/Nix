@@ -1,94 +1,5 @@
 { config, lib, pkgs, ... }:
 
-let
-  # GDM greeter monitor layout. Materialized as an independent copy in
-  # the Nix store so the greeter never has to traverse /home/ssow.
-  # Since GNOME 49, the greeter reads this from /var/lib/gdm/seat0/config.
-  monitorsXml = pkgs.writeText "gdm-monitors.xml" ''
-    <monitors version="2">
-      <configuration>
-        <layoutmode>logical</layoutmode>
-        <logicalmonitor>
-          <x>0</x>
-          <y>0</y>
-          <scale>1.5</scale>
-          <monitor>
-            <monitorspec>
-              <connector>DP-2</connector>
-              <vendor>GBT</vendor>
-              <product>M27UP</product>
-              <serial>0x01010101</serial>
-            </monitorspec>
-            <mode>
-              <width>3840</width>
-              <height>2160</height>
-              <rate>160.000</rate>
-            </mode>
-          </monitor>
-        </logicalmonitor>
-        <logicalmonitor>
-          <x>2560</x>
-          <y>0</y>
-          <scale>1</scale>
-          <primary>yes</primary>
-          <monitor>
-            <monitorspec>
-              <connector>DP-1</connector>
-              <vendor>AUS</vendor>
-              <product>PG27AQWP-G</product>
-              <serial>W6LMAS004487</serial>
-            </monitorspec>
-            <mode>
-              <width>2560</width>
-              <height>1440</height>
-              <rate>540.000</rate>
-            </mode>
-          </monitor>
-        </logicalmonitor>
-      </configuration>
-      <configuration>
-        <layoutmode>logical</layoutmode>
-        <logicalmonitor>
-          <x>0</x>
-          <y>0</y>
-          <scale>1.5</scale>
-          <monitor>
-            <monitorspec>
-              <connector>DP-1</connector>
-              <vendor>GBT</vendor>
-              <product>M27UP</product>
-              <serial>0x01010101</serial>
-            </monitorspec>
-            <mode>
-              <width>3840</width>
-              <height>2160</height>
-              <rate>59.997</rate>
-            </mode>
-          </monitor>
-        </logicalmonitor>
-        <logicalmonitor>
-          <x>2560</x>
-          <y>0</y>
-          <scale>1</scale>
-          <primary>yes</primary>
-          <monitor>
-            <monitorspec>
-              <connector>DP-2</connector>
-              <vendor>AUS</vendor>
-              <product>PG27AQWP-G</product>
-              <serial>W6LMAS004487</serial>
-            </monitorspec>
-            <mode>
-              <width>2560</width>
-              <height>1440</height>
-              <rate>59.951</rate>
-            </mode>
-          </monitor>
-        </logicalmonitor>
-      </configuration>
-    </monitors>
-  '';
-in
 {
   imports = [
     # Include the results of the hardware scan.
@@ -153,8 +64,9 @@ in
   networking.hostName = "nixos";
 
   # NetworkManager with the OpenVPN plugin for the manual NordVPN
-  # profiles. Import the .ovpn files in GNOME Settings after install,
-  # using the service credentials from the Nord Account dashboard.
+  # profiles. Import the .ovpn files via plasma-nm (the network applet
+  # in the system tray) after install, using the service credentials
+  # from the Nord Account dashboard.
   networking.networkmanager = {
     enable = true;
     plugins = with pkgs; [ networkmanager-openvpn ];
@@ -181,15 +93,15 @@ in
   # Enable the X11 windowing system (XWayland and keymap handling).
   services.xserver.enable = true;
 
-  # GNOME Desktop Environment.
-  services.displayManager.gdm.enable = true;
-  services.desktopManager.gnome.enable = true;
+  # KDE Plasma 6 Desktop Environment with Plasma Login Manager,
+  # KDE's SDDM successor shipped with Plasma 6.6. Runs as a Wayland
+  # greeter and is configured via System Settings > Login Screen.
+  # Requires NixOS 26.05+.
+  services.displayManager.plasma-login-manager.enable = true;
+  services.desktopManager.plasma6.enable = true;
 
-  # GDM greeter monitor layout, see monitorsXml above.
-  # L+ forces overwrite of any stale file or symlink.
-  systemd.tmpfiles.rules = [
-    "L+ /var/lib/gdm/seat0/config/monitors.xml - gdm gdm - ${monitorsXml}"
-  ];
+  # Default to the Wayland Plasma session at login.
+  services.displayManager.defaultSession = "plasma";
 
   # Configure keymap in X11
   services.xserver.xkb = {
@@ -318,10 +230,6 @@ in
     zoom-us
     localsend
 
-    # GNOME
-    gnome-tweaks
-    gnome-extension-manager
-
     # Gaming and graphics
     mangohud
     mangojuice
@@ -386,17 +294,9 @@ in
     binfmt = true;
   };
 
+  # Kept for GTK apps (deja-dup, gearlever, etc.), which store their
+  # settings via dconf even under Plasma.
   programs.dconf.enable = true;
-
-  programs.dconf.profiles.user.databases = [
-    {
-      settings = {
-        "org/gnome/shell" = {
-          disable-extension-version-validation = true;
-        };
-      };
-    }
-  ];
 
   # Declarative restic to B2. Credentials live in /etc/restic/env,
   # including RESTIC_PASSWORD, so no passwordFile is needed.
